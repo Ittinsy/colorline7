@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<title>colorline7</title>
+<style>
+:root{--u:3.6px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+html,body{margin:0;background:#f0f0f0}
+body{
+  padding:6px 0 10px;
+  padding-top:calc(6px + env(safe-area-inset-top));
+  padding-bottom:calc(10px + env(safe-area-inset-bottom));
+  font-family:-apple-system,"PingFang SC","Microsoft YaHei","Heiti SC",sans-serif;color:#000;touch-action:manipulation;
+}
+#app{max-width:520px;margin:0 auto}
+.row{display:flex;align-items:center;padding:calc(var(--u)*2) calc(var(--u)*2.5)}
+.top{padding-bottom:calc(var(--u)*3)}
+.tools{padding-top:calc(var(--u)*1.5)}
+
+.win{
+  flex:0 0 auto;width:calc(var(--u)*31);height:calc(var(--u)*13);margin:0 calc(var(--u)*2.5) 0 0;padding:0;cursor:pointer;
+  background:#efefef;border:2px solid;border-color:#fff #404040 #404040 #fff;
+  box-shadow:inset -1px -1px 0 #808080,inset 1px 1px 0 #dfdfdf;outline:none;
+  font-family:"STXingkai","Xingkai SC","STKaiti","Kaiti SC","KaiTi",serif;
+  font-weight:900;font-size:calc(var(--u)*7.4);color:#111;
+}
+.win.wide{flex:1;width:auto;margin-right:0;font-size:calc(var(--u)*5.6)}
+.win:active:not(:disabled){border-color:#404040 #fff #fff #404040;box-shadow:inset 1px 1px 0 #808080}
+.win:disabled{color:#8a8a8a;text-shadow:1px 1px 0 #fff;cursor:default}
+.chk{flex:1;min-width:0;display:flex;align-items:center;height:calc(var(--u)*13);cursor:pointer;font-size:calc(var(--u)*6.2);white-space:nowrap}
+.chk .dot{flex:0 0 auto;width:calc(var(--u)*5.6);height:calc(var(--u)*5.6);margin-right:calc(var(--u)*2);border-radius:50%;border:2px solid #2d5aa8;background:#fff}
+.chk[aria-checked="true"] .dot{background:#4472c4;box-shadow:inset 0 0 0 2px #fff}
+.chk.dis{opacity:.45;cursor:default}
+
+.frame{margin:0 calc(var(--u)*1.2);padding:2px;border:2px solid;border-color:#808080 #fff #fff #808080;background:#d8d8d8}
+#board{display:block;touch-action:none;background:#8f8e80}
+
+.bottom{align-items:stretch;padding-top:calc(var(--u)*3.5)}
+.nextbox{width:48.5%;margin-right:3%;background:#ececec;padding:calc(var(--u)*2) calc(var(--u)*2.5) calc(var(--u)*2.5)}
+.lbl{font-size:calc(var(--u)*5.6);margin-bottom:calc(var(--u)*1.5)}
+.sunk{border:2px solid;border-color:#808080 #fff #fff #808080;background:#8f8e80;padding:2px}
+#next{display:block}
+.leds{flex:1;display:flex;flex-direction:column;justify-content:space-between;background:#ececec;padding:calc(var(--u)*2) calc(var(--u)*2.5)}
+.led{
+  height:calc(var(--u)*11);padding:0 calc(var(--u)*2.5);background:#000;border:2px solid;border-color:#808080 #fff #fff #808080;
+  font-family:"Courier New",Courier,monospace;font-weight:700;font-size:calc(var(--u)*7.4);line-height:calc(var(--u)*10);
+  text-align:right;white-space:nowrap;overflow:hidden;
+}
+.red{color:#f00}.green{color:#0f0}
+.seed{padding:calc(var(--u)*3) calc(var(--u)*2.5) 0;font-family:"Courier New",Courier,monospace;font-size:calc(var(--u)*6.4)}
+
+#mask{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.28);align-items:center;justify-content:center;padding:16px;z-index:9}
+#mask.on{display:flex}
+.dlg{width:86vw;max-width:360px;background:#ececec;border:2px solid;border-color:#fff #404040 #404040 #fff;box-shadow:inset -1px -1px 0 #808080,3px 4px 0 rgba(0,0,0,.35)}
+.dlg .tt{background:linear-gradient(90deg,#0a246a,#a6caf0);color:#fff;font-weight:700;font-size:16px;padding:5px 8px}
+.dlg .bd{display:flex;align-items:center;padding:18px 16px 10px;font-size:17px;line-height:1.5}
+.dlg .ic{flex:0 0 auto;width:34px;height:34px;margin-right:14px;border-radius:50%;background:#2a5db0;color:#fff;font:700 22px/34px Georgia,serif;text-align:center}
+.dlg .tx{flex:1;min-width:0;word-break:break-all}
+.dlg input{display:block;width:calc(100% - 32px);margin:0 16px 8px;padding:8px;font-size:18px;border:2px solid;border-color:#808080 #fff #fff #808080;background:#fff;-webkit-user-select:text;user-select:text;border-radius:0}
+.dlg .bt{display:flex;justify-content:center;padding:8px 16px 16px}
+.dlg .bt button{min-width:84px;height:40px;margin:0 6px;font-size:17px;background:#efefef;border:2px solid;border-color:#fff #404040 #404040 #fff;box-shadow:inset -1px -1px 0 #808080;color:#000}
+.dlg .bt button:active{border-color:#404040 #fff #fff #404040}
+.slots{padding:10px 14px 4px}
+.slot{display:flex;align-items:center;padding:8px 4px;border-bottom:1px dotted #999;cursor:pointer}
+.slot.off{opacity:.45;cursor:default}
+.slot b{flex:0 0 1.6em;font-size:18px}
+.slot .info{flex:1;min-width:0}
+.slot .l1{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .l2{font-size:13px;color:#555}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="row top">
+    <button id="btnNew" class="win" type="button">新游戏</button>
+    <button id="btnUndo" class="win" type="button" disabled>撤销</button>
+    <div id="chk" class="chk" role="checkbox" aria-checked="false" tabindex="0"><span class="dot"></span><span>困难</span></div>
+  </div>
+  <div class="frame"><div id="bw"><canvas id="board"></canvas></div></div>
+  <div class="row bottom">
+    <div class="nextbox">
+      <div class="lbl">下一组：</div>
+      <div class="sunk"><div id="nw"><canvas id="next"></canvas></div></div>
+    </div>
+    <div class="leds">
+      <div id="best" class="led red">0</div>
+      <div id="score" class="led green">0</div>
+    </div>
+  </div>
+  <div id="seed" class="seed">SEED:0</div>
+  <div class="row tools">
+    <button id="btnSave" class="win" type="button">存档</button>
+    <button id="btnLoad" class="win" type="button">读档</button>
+    <button id="btnSeed" class="win wide" type="button">自选开局</button>
+  </div>
+</div>
+<div id="mask"></div>
+
+<script>
+(function () {
+'use strict';
+
+var SCORE_CAP = 99999999;
+var STORE_KEY = 'colorline-v2';
+var SLOT_COUNT = 5;
+var UNDO_LIMIT = 500;
+var STEP_MS = 48, FRAME_MS = 31, REFRESH_MS = 200, BOUNCE_MS = 60;
+var DIRS = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+var LINE_DIRS = [[1, 0], [0, 1], [1, 1], [1, -1]];
+var BOUNCE_SIZES = [36, 32, 28, 32, 36, 40];
+var PALETTE = [null,
+  { hi: '#ff9c84', mid: '#c42212', lo: '#4a0500' },
+  { hi: '#ffeaa6', mid: '#e2a13a', lo: '#6e4204' },
+  { hi: '#a4ff94', mid: '#1fbd1f', lo: '#06440a' },
+  { hi: '#93a0ff', mid: '#2424c2', lo: '#08084e' },
+  { hi: '#ffa6f2', mid: '#d02cb4', lo: '#560a4a' },
+  { hi: '#a6faff', mid: '#1eb2c8', lo: '#04404a' },
+  { hi: '#ffffff', mid: '#d6d6d6', lo: '#666666' }
+];
+
+var $ = function (id) { return document.getElementById(id); };
+var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+var inBoard = function (r, c) { return r >= 0 && r < 9 && c >= 0 && c < 9; };
+
+var G = null;
+var store = { best: { 1: 0, 2: 0 }, slots: [] };
+var busy = false;
+var sel = -1;
+var selSize = 40;
+var bounceTimer = null;
+var bounceStep = 0;
+var overrides = new Map();
+var floating = null;
+
+var boardEl = $('board'), boardCtx = boardEl.getContext('2d');
+var nextEl = $('next'), nextCtx = nextEl.getContext('2d');
+
+function nextRand() {
+  G.rng = (G.rng + 0x6D2B79F5) | 0;
+  var t = Math.imul(G.rng ^ (G.rng >>> 15), 1 | G.rng);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+function rnd(n) { return Math.floor(nextRand() * n); }
+function randomColors(n) {
+  var out = [];
+  for (var i = 0; i < n; i++) out.push(rnd(7) + 1);
+  while (out.length < 3) out.push(0);
+  return out;
+}
+function randomSeed() { return 1 + Math.floor(Math.random() * 99999); }
+
+function freshGame(seed, level) {
+  var g = {
+    board: new Array(81).fill(0), next: [0, 0, 0], score: 0, level: level, tag: 0,
+    tab: new Array(10).fill(0), src: 0, dst: 0, seed: seed, rng: seed | 0, undo: [], undos: 0
+  };
+  G = g;
+  for (var i = 0; i < 3; i++) g.tab[rnd(10)] = 1;
+  return g;
+}
+
+function emptyCells() {
+  var out = [];
+  for (var i = 0; i < 81; i++) if (!G.board[i]) out.push(i);
+  return out;
+}
+
+function lineAt(i) {
+  var color = G.board[i];
+  if (!color) return null;
+  var r0 = Math.floor(i / 9), c0 = i % 9, cells = [];
+  LINE_DIRS.forEach(function (d) {
+    var run = [];
+    [1, -1].forEach(function (s) {
+      var r = r0 + d[0] * s, c = c0 + d[1] * s;
+      while (inBoard(r, c) && G.board[r * 9 + c] === color) { run.push(r * 9 + c); r += d[0] * s; c += d[1] * s; }
+    });
+    if (run.length >= 4) cells = cells.concat(run);
+  });
+  if (!cells.length) return null;
+  cells.push(i);
+  return cells;
+}
+
+function neighbours(i) {
+  var out = [], r = Math.floor(i / 9), c = i % 9;
+  DIRS.forEach(function (d) {
+    if (inBoard(r + d[0], c + d[1])) out.push((r + d[0]) * 9 + c + d[1]);
+  });
+  return out;
+}
+
+function findPath(from, to) {
+  var dist = new Array(81).fill(-1), queue = [to];
+  dist[to] = 0;
+  for (var h = 0; h < queue.length; h++) {
+    neighbours(queue[h]).forEach(function (n) {
+      if (!G.board[n] && dist[n] < 0) { dist[n] = dist[queue[h]] + 1; queue.push(n); }
+    });
+  }
+  var path = [], cur = from;
+  for (;;) {
+    var around = neighbours(cur), want = -1;
+    if (!path.length) {
+      around.forEach(function (n) { if (dist[n] >= 0 && (want < 0 || dist[n] < want)) want = dist[n]; });
+    } else {
+      want = dist[cur] - 1;
+    }
+    if (want < 0) return null;
+    var step = around.filter(function (n) { return dist[n] === want; })[0];
+    path.push(step);
+    if (step === to) return path;
+    cur = step;
+  }
+}
+
+function spawn(colors) {
+  var placed = [];
+  var put = function (color, i) { G.board[i] = color; placed.push({ color: color, i: i }); };
+  var n = 0;
+  if (G.level === 2 && G.tag === 1 && G.tab[rnd(10)] === 1) {
+    put(colors[0], G.src);
+    n = 1;
+    var dr = Math.floor(G.dst / 9), dc = G.dst % 9, free = [];
+    DIRS.forEach(function (d) {
+      var r = dr + d[0], c = dc + d[1];
+      if (inBoard(r, c) && !G.board[r * 9 + c]) free.push(r * 9 + c);
+    });
+    if (free.length) { put(colors[1], free[rnd(free.length)]); n = 2; }
+  }
+  for (; n < 3; n++) {
+    if (!colors[n]) continue;
+    var empty = emptyCells();
+    if (!empty.length) break;
+    put(colors[n], empty[rnd(empty.length)]);
+  }
+  return placed;
+}
+
+async function clearLine(i, scored) {
+  var cells = lineAt(i);
+  if (!cells) return false;
+  var sizes = [36, 32, 28, 0];
+  for (var s = 0; s < sizes.length; s++) {
+    cells.forEach(function (c) { overrides.set(c, sizes[s]); });
+    render();
+    await sleep(FRAME_MS);
+  }
+  cells.forEach(function (c) { G.board[c] = 0; });
+  overrides.clear();
+  if (scored) {
+    var n = cells.length;
+    G.score = Math.min(SCORE_CAP, G.score + Math.floor(5 * (n - 4) * (n - 3) / 2) + 5);
+  }
+  refreshUi();
+  render();
+  return true;
+}
+
+async function commit(colors) {
+  var placed = spawn(colors);
+  var sizes = [28, 32, 36, 40];
+  for (var s = 0; s < sizes.length; s++) {
+    placed.forEach(function (p) { overrides.set(p.i, sizes[s]); });
+    render();
+    await sleep(FRAME_MS);
+  }
+  overrides.clear();
+  render();
+  for (var k = 0; k < placed.length; k++) if (G.board[placed[k].i]) await clearLine(placed[k].i, false);
+}
+
+function pushUndo() {
+  G.undo.push({ b: G.board.join(''), n: G.next.join(''), s: G.score });
+  if (G.undo.length > UNDO_LIMIT) G.undo.shift();
+}
+
+function moveWouldClear(from, to) {
+  var color = G.board[from];
+  G.board[from] = 0;
+  G.board[to] = color;
+  var hit = lineAt(to) !== null;
+  G.board[to] = 0;
+  G.board[from] = color;
+  return hit;
+}
+
+async function doMove(from, to, path) {
+  stopBounce();
+  sel = -1;
+  pushUndo();
+  var colors = G.next.slice();
+  var color = G.board[from];
+  var refresh = Promise.resolve();
+  if (!moveWouldClear(from, to)) {
+    var fresh = randomColors(3);
+    refresh = sleep(REFRESH_MS).then(function () { G.next = fresh; render(); });
+  }
+  G.tag = 1;
+  G.src = from;
+  G.dst = to;
+  refreshUi();
+  overrides.set(from, 0);
+  floating = { cell: from, color: color };
+  for (var k = 0; k < path.length; k++) {
+    floating.cell = path[k];
+    render();
+    await sleep(STEP_MS);
+  }
+  G.board[from] = 0;
+  G.board[to] = color;
+  floating = null;
+  overrides.clear();
+  render();
+  var cleared = await clearLine(to, true);
+  if (!cleared) await commit(colors);
+  await refresh;
+  if (!cleared && !emptyCells().length) { await startNew(undefined, false); return; }
+  persist();
+}
+
+async function finishGame() {
+  if (G.score > store.best[G.level]) {
+    store.best[G.level] = G.score;
+    persist();
+    await alertDlg('恭喜破纪录');
+  } else if (G.tag === 1) {
+    await alertDlg('挑战失败，加油吧');
+  }
+}
+
+async function openGame(seed) {
+  freshGame(seed, G ? G.level : 1);
+  sel = -1;
+  stopBounce();
+  overrides.clear();
+  floating = null;
+  refreshUi();
+  render();
+  await commit(randomColors(3));
+  await commit(randomColors(2));
+  G.next = randomColors(3);
+  refreshUi();
+  render();
+  persist();
+}
+
+async function startNew(seed, askFirst) {
+  if (askFirst && G.score > 0 && !(await confirmDlg('重新开始？'))) return;
+  await finishGame();
+  await openGame(seed === undefined ? randomSeed() : seed);
+}
+
+async function undoMove() {
+  if (!G.undo.length) return;
+  var snap = G.undo.pop();
+  var cost = G.undos === 0 ? 0 : (G.undos === 1 ? 5 : 10);
+  G.undos++;
+  G.board = snap.b.split('').map(Number);
+  G.next = snap.n.split('').map(Number);
+  G.score = Math.max(0, snap.s - cost);
+  stopBounce();
+  sel = -1;
+  refreshUi();
+  render();
+  persist();
+}
+
+function startBounce() {
+  stopBounce();
+  bounceStep = 0;
+  selSize = BOUNCE_SIZES[0];
+  bounceTimer = setInterval(function () {
+    bounceStep = (bounceStep + 1) % BOUNCE_SIZES.length;
+    selSize = BOUNCE_SIZES[bounceStep];
+    render();
+  }, BOUNCE_MS);
+}
+function stopBounce() {
+  if (bounceTimer) clearInterval(bounceTimer);
+  bounceTimer = null;
+  selSize = 40;
+}
+
+function dpr() { return Math.min(window.devicePixelRatio || 1, 3); }
+
+function drawBall(ctx, x, y, d, v) {
+  var R = d / 2, c = PALETTE[v];
+  ctx.fillStyle = 'rgba(0,0,0,.30)';
+  ctx.beginPath(); ctx.ellipse(x + R * 0.12, y + R * 0.16, R * 0.98, R * 0.94, 0, 0, 7); ctx.fill();
+  var g = ctx.createRadialGradient(x - R * 0.36, y - R * 0.42, R * 0.08, x - R * 0.05, y - R * 0.05, R * 1.05);
+  g.addColorStop(0, c.hi); g.addColorStop(0.42, c.mid); g.addColorStop(1, c.lo);
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, R, 0, 7); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.5)';
+  ctx.beginPath(); ctx.ellipse(x - R * 0.38, y - R * 0.44, R * 0.22, R * 0.13, -0.6, 0, 7); ctx.fill();
+}
+
+function render() {
+  if (!G) return;
+  var S = boardEl.width, cs = S / 9, lw = Math.max(1, Math.round(dpr()));
+  var ctx = boardCtx;
+  ctx.fillStyle = '#8f8e80';
+  ctx.fillRect(0, 0, S, S);
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = lw;
+  ctx.beginPath();
+  for (var k = 1; k < 9; k++) {
+    var p = Math.round(k * cs);
+    ctx.moveTo(p, 0); ctx.lineTo(p, S); ctx.moveTo(0, p); ctx.lineTo(S, p);
+  }
+  ctx.stroke();
+  ctx.lineWidth = lw * 2;
+  ctx.strokeRect(lw, lw, S - 2 * lw, S - 2 * lw);
+  var diameter = function (size) { return cs * 0.8 * size / 40; };
+  for (var i = 0; i < 81; i++) {
+    var v = G.board[i];
+    if (!v) continue;
+    var size = overrides.has(i) ? overrides.get(i) : (i === sel ? selSize : 40);
+    if (size > 0) drawBall(ctx, (i % 9 + 0.5) * cs, (Math.floor(i / 9) + 0.5) * cs, diameter(size), v);
+  }
+  if (floating) drawBall(ctx, (floating.cell % 9 + 0.5) * cs, (Math.floor(floating.cell / 9) + 0.5) * cs, diameter(40), floating.color);
+
+  var w = nextEl.width, h = nextEl.height;
+  nextCtx.fillStyle = '#8f8e80';
+  nextCtx.fillRect(0, 0, w, h);
+  G.next.forEach(function (c, n) { if (c > 0) drawBall(nextCtx, (n + 0.5) * w / 3, h / 2, h * 0.8, c); });
+}
+
+function sizeCanvas(cv, wrap, ratio) {
+  var w = wrap.clientWidth;
+  if (!w) return;
+  var h = Math.round(w * ratio), d = dpr();
+  cv.style.width = w + 'px';
+  cv.style.height = h + 'px';
+  cv.width = Math.round(w * d);
+  cv.height = Math.round(h * d);
+}
+
+function fit() {
+  var w = $('app').clientWidth;
+  if (!w) return;
+  document.documentElement.style.setProperty('--u', (w / 100) + 'px');
+  sizeCanvas(boardEl, $('bw'), 1);
+  sizeCanvas(nextEl, $('nw'), 1 / 3);
+  render();
+}
+
+function refreshUi() {
+  if (!G) return;
+  $('score').textContent = G.score;
+  $('best').textContent = store.best[G.level];
+  $('seed').textContent = 'SEED:' + G.seed;
+  $('btnUndo').disabled = !G.undo.length;
+  var chk = $('chk');
+  chk.setAttribute('aria-checked', G.level === 2 ? 'true' : 'false');
+  chk.className = G.tag === 1 ? 'chk dis' : 'chk';
+}
+
+function el(tag, cls, text) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function showDialog(build, buttons, input) {
+  return new Promise(function (resolve) {
+    var mask = $('mask');
+    var box = el('div', 'dlg');
+    var field = null;
+    var done = function (result) {
+      mask.className = '';
+      mask.innerHTML = '';
+      resolve(result);
+    };
+    box.setAttribute('role', 'dialog');
+    box.appendChild(el('div', 'tt', 'colorline7'));
+    box.appendChild(build(done));
+    if (input !== undefined) {
+      field = el('input');
+      field.type = 'text';
+      field.value = input;
+      field.maxLength = 10;
+      field.setAttribute('inputmode', 'numeric');
+      field.setAttribute('autocomplete', 'off');
+      box.appendChild(field);
+    }
+    var bar = el('div', 'bt');
+    buttons.forEach(function (label, n) {
+      var b = el('button', '', label);
+      b.type = 'button';
+      b.onclick = function () { done({ btn: n, text: field ? field.value.trim() : null }); };
+      bar.appendChild(b);
+    });
+    box.appendChild(bar);
+    if (field) field.onkeydown = function (e) { if (e.key === 'Enter') done({ btn: 0, text: field.value.trim() }); };
+    mask.innerHTML = '';
+    mask.appendChild(box);
+    mask.className = 'on';
+    if (field) setTimeout(function () { field.focus(); field.select(); }, 60);
+  });
+}
+function messageBody(icon, msg) {
+  return function () {
+    var body = el('div', 'bd');
+    body.appendChild(el('div', 'ic', icon));
+    body.appendChild(el('div', 'tx', msg));
+    return body;
+  };
+}
+function alertDlg(msg) { return showDialog(messageBody('i', msg), ['确定']); }
+async function confirmDlg(msg) { return (await showDialog(messageBody('?', msg), ['是', '否'])).btn === 0; }
+async function promptDlg(msg, value) {
+  var r = await showDialog(messageBody('?', msg), ['确定', '取消'], value);
+  return r.btn === 0 ? r.text : null;
+}
+
+function formatTime(t) {
+  var d = new Date(t), two = function (n) { return (n < 10 ? '0' : '') + n; };
+  return two(d.getMonth() + 1) + '-' + two(d.getDate()) + ' ' + two(d.getHours()) + ':' + two(d.getMinutes());
+}
+async function slotDialog(title, loading) {
+  var r = await showDialog(function (done) {
+    var wrap = el('div', 'slots');
+    wrap.appendChild(el('div', 'l2', title));
+    for (var n = 0; n < SLOT_COUNT; n++) (function (n) {
+      var data = store.slots[n];
+      var row = el('div', data || !loading ? 'slot' : 'slot off');
+      var info = el('div', 'info');
+      row.appendChild(el('b', '', String(n + 1)));
+      if (data) {
+        info.appendChild(el('div', 'l1', data.g.s + '分 ' + (data.g.lv === 2 ? '困难' : '普通') + ' SEED:' + data.g.sd));
+        info.appendChild(el('div', 'l2', formatTime(data.t)));
+      } else {
+        info.appendChild(el('div', 'l1', '空'));
+      }
+      row.appendChild(info);
+      if (data || !loading) row.onclick = function () { done({ btn: -1, slot: n }); };
+      wrap.appendChild(row);
+    })(n);
+    return wrap;
+  }, ['返回']);
+  return r.btn === -1 ? r.slot : -1;
+}
+
+function isDigits(s, n) { return typeof s === 'string' && s.length === n && /^[0-7]+$/.test(s); }
+function num(v, d) { return typeof v === 'number' && isFinite(v) ? v : d; }
+function pack(g) {
+  return {
+    b: g.board.join(''), n: g.next.join(''), s: g.score, lv: g.level, tg: g.tag, tb: g.tab.join(''),
+    sc: g.src, dt: g.dst, sd: g.seed, rg: g.rng, uc: g.undos,
+    un: g.undo.map(function (u) { return { b: u.b, n: u.n, s: u.s }; })
+  };
+}
+function unpack(o) {
+  if (!o || !isDigits(o.b, 81) || !isDigits(o.n, 3) || !/^[01]{10}$/.test(o.tb) || !Array.isArray(o.un)) return null;
+  var digits = function (s) { return s.split('').map(Number); };
+  return {
+    board: digits(o.b), next: digits(o.n), score: Math.min(SCORE_CAP, Math.max(0, num(o.s, 0))),
+    level: o.lv === 2 ? 2 : 1, tag: o.tg ? 1 : 0, tab: digits(o.tb),
+    src: num(o.sc, 0), dst: num(o.dt, 0), seed: num(o.sd, 1), rng: num(o.rg, 1) | 0, undos: num(o.uc, 0),
+    undo: o.un.filter(function (u) { return u && isDigits(u.b, 81) && isDigits(u.n, 3); })
+      .map(function (u) { return { b: u.b, n: u.n, s: num(u.s, 0) }; })
+  };
+}
+
+function persist() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify({ cur: pack(G), best: store.best, slots: store.slots }));
+  } catch (e) {}
+}
+function readStore() {
+  try {
+    var o = JSON.parse(localStorage.getItem(STORE_KEY));
+    if (!o) return null;
+    store.best = { 1: num(o.best && o.best[1], 0), 2: num(o.best && o.best[2], 0) };
+    for (var n = 0; n < SLOT_COUNT; n++) {
+      var s = o.slots && o.slots[n];
+      store.slots[n] = s && unpack(s.g) ? { t: num(s.t, 0), g: s.g } : null;
+    }
+    return unpack(o.cur);
+  } catch (e) { return null; }
+}
+
+async function saveFlow() {
+  for (;;) {
+    var n = await slotDialog('存档', false);
+    if (n < 0) return;
+    if (store.slots[n] && !(await confirmDlg('覆盖该存档吗？'))) continue;
+    store.slots[n] = { t: Date.now(), g: pack(G) };
+    persist();
+  }
+}
+async function loadFlow() {
+  var n = await slotDialog('读档', true);
+  if (n < 0) return;
+  if (G.tag === 1 && !(await confirmDlg('覆盖当前进度吗？'))) return;
+  var g = unpack(store.slots[n].g);
+  if (!g) return;
+  G = g;
+  sel = -1;
+  stopBounce();
+  refreshUi();
+  render();
+  persist();
+}
+async function customStart() {
+  var text = await promptDlg('输入 SEED（数字）', String(G.seed));
+  if (text === null) return;
+  if (!/^\d{1,10}$/.test(text) || Number(text) > 4294967295) { await alertDlg('SEED 无效'); return; }
+  await startNew(Number(text), true);
+}
+async function toggleLevel() {
+  if (G.tag === 1) return;
+  var to = G.level === 1 ? 2 : 1;
+  await alertDlg(to === 2 ? '已切换困难模式' : '已切换普通模式');
+  G.level = to;
+  await openGame(G.seed);
+}
+
+function guarded(fn) {
+  return async function () {
+    if (busy) return;
+    busy = true;
+    try { await fn(); } finally { busy = false; refreshUi(); }
+  };
+}
+
+async function onTap(ev) {
+  ev.preventDefault();
+  if (busy) return;
+  var p = ev.touches && ev.touches.length ? ev.touches[0] : ev;
+  var rect = boardEl.getBoundingClientRect();
+  var c = Math.floor((p.clientX - rect.left) / rect.width * 9), r = Math.floor((p.clientY - rect.top) / rect.height * 9);
+  if (!inBoard(r, c)) return;
+  var i = r * 9 + c;
+  if (G.board[i]) { sel = i; startBounce(); render(); return; }
+  if (sel < 0) return;
+  var path = findPath(sel, i);
+  if (!path) return;
+  var from = sel;
+  busy = true;
+  try { await doMove(from, i, path); } finally { busy = false; refreshUi(); }
+}
+
+if (window.PointerEvent) {
+  boardEl.addEventListener('pointerdown', onTap);
+} else {
+  boardEl.addEventListener('touchstart', onTap);
+  boardEl.addEventListener('mousedown', onTap);
+}
+$('btnNew').onclick = guarded(function () { return startNew(undefined, true); });
+$('btnUndo').onclick = guarded(undoMove);
+$('btnSave').onclick = guarded(saveFlow);
+$('btnLoad').onclick = guarded(loadFlow);
+$('btnSeed').onclick = guarded(customStart);
+$('chk').onclick = guarded(toggleLevel);
+$('chk').onkeydown = function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); $('chk').onclick(); } };
+window.addEventListener('resize', fit);
+window.addEventListener('orientationchange', fit);
+window.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+(async function init() {
+  fit();
+  setTimeout(fit, 300);
+  var saved = readStore();
+  if (saved) {
+    G = saved;
+    refreshUi();
+    render();
+    return;
+  }
+  busy = true;
+  try { await openGame(randomSeed()); } finally { busy = false; refreshUi(); }
+})();
+})();
+</script>
+</body>
+</html>
